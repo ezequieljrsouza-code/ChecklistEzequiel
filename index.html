@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Checklist T2 — Ezequiel Miranda</title>
+<style>
+  :root {
+    --bg: #0d0f14;
+    --surface: #13161e;
+    --surface2: #1a1e28;
+    --border: #252a38;
+    --accent: #4f8ef7;
+    --accent2: #7c5af6;
+    --green: #2ecc8a;
+    --red: #f75a5a;
+    --text: #e8ecf4;
+    --muted: #6b7280;
+    --done-text: #3d4350;
+    --radius: 12px;
+  }
+  html.light {
+    --bg: #f0f2f7;
+    --surface: #ffffff;
+    --surface2: #e8ecf4;
+    --border: #d1d8e8;
+    --accent: #3a78e8;
+    --accent2: #6b44e0;
+    --green: #1aaa6e;
+    --red: #e03c3c;
+    --text: #1a1e2e;
+    --muted: #7a8299;
+    --done-text: #b0b8cc;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: var(--bg); color: var(--text);
+    min-height: 100vh; padding: 24px 16px 60px;
+    background-image:
+      radial-gradient(ellipse 60% 40% at 10% 0%, rgba(79,142,247,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 30% at 90% 100%, rgba(124,90,246,0.07) 0%, transparent 60%);
+    transition: background 0.3s, color 0.3s;
+  }
+  html.light body {
+    background-image:
+      radial-gradient(ellipse 60% 40% at 10% 0%, rgba(58,120,232,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 30% at 90% 100%, rgba(107,68,224,0.05) 0%, transparent 60%);
+  }
+
+  /* ── HEADER ── */
+  header {
+    max-width: 820px; margin: 0 auto 28px; padding: 24px 28px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); display: flex; align-items: center;
+    justify-content: space-between; gap: 16px; flex-wrap: wrap;
+    position: relative; overflow: hidden;
+    transition: background 0.3s, border-color 0.3s;
+  }
+  header::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+  }
+  .header-title h1 {
+    font-size: 1.45rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.04em;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .header-title p {
+    font-size: 0.72rem; color: var(--muted); margin-top: 5px;
+    text-transform: uppercase; letter-spacing: 0.1em;
+  }
+  .header-right { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+  .header-stats { display: flex; gap: 14px; align-items: center; }
+  .stat { text-align: center; }
+  .stat-num { font-size: 1.5rem; font-weight: 900; line-height: 1; }
+  .stat-label { font-size: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 2px; }
+  .stat.done .stat-num { color: var(--green); }
+  .stat.total .stat-num { color: var(--accent); }
+
+  .date-badge {
+    font-size: 0.68rem; color: var(--muted); padding: 4px 10px;
+    border: 1px solid var(--border); border-radius: 6px; background: var(--surface);
+    text-transform: uppercase; letter-spacing: 0.08em;
+    transition: background 0.3s, border-color 0.3s;
+  }
+
+  /* ── SYNC STATUS ── */
+  .sync-badge {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.06em; padding: 4px 10px;
+    border-radius: 6px; border: 1px solid; transition: all 0.4s;
+  }
+  .sync-badge.syncing { color: #f7c948; border-color: rgba(247,201,72,0.3); background: rgba(247,201,72,0.08); }
+  .sync-badge.synced  { color: var(--green); border-color: rgba(46,204,138,0.3); background: rgba(46,204,138,0.08); }
+  .sync-badge.offline { color: var(--muted); border-color: var(--border); background: transparent; }
+  .sync-badge.error   { color: var(--red); border-color: rgba(247,90,90,0.3); background: rgba(247,90,90,0.08); }
+  .sync-dot {
+    width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+    background: currentColor;
+  }
+  .sync-badge.syncing .sync-dot { animation: pulse 0.8s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  /* ── THEME TOGGLE ── */
+  .theme-toggle {
+    display: flex; align-items: center; gap: 7px; cursor: pointer;
+    padding: 5px 11px; border-radius: 99px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--muted);
+    font-family: Arial, Helvetica, sans-serif; font-size: 0.72rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em; transition: all 0.2s; user-select: none;
+  }
+  .theme-toggle:hover { border-color: var(--accent); color: var(--text); }
+  .toggle-track {
+    width: 32px; height: 17px; border-radius: 99px; background: var(--border);
+    position: relative; transition: background 0.3s; flex-shrink: 0;
+  }
+  html.light .toggle-track { background: var(--accent); }
+  .toggle-thumb {
+    width: 11px; height: 11px; border-radius: 50%; background: #fff;
+    position: absolute; top: 3px; left: 3px;
+    transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  }
+  html.light .toggle-thumb { transform: translateX(15px); }
+
+  /* ── PROGRESS ── */
+  .progress-bar {
+    max-width: 820px; margin: 0 auto 20px; height: 5px;
+    background: var(--surface); border-radius: 99px; overflow: hidden; transition: background 0.3s;
+  }
+  .progress-fill {
+    height: 100%; background: linear-gradient(90deg, var(--green), var(--accent));
+    border-radius: 99px; transition: width 0.5s cubic-bezier(0.4,0,0.2,1); width: 0%;
+  }
+
+  /* ── TOOLBAR ── */
+  .toolbar-wrap { max-width: 820px; margin: 0 auto 16px; display: flex; flex-direction: column; gap: 10px; }
+  .toolbar-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .toolbar-row.space-between { justify-content: space-between; }
+  .add-form { display: flex; gap: 8px; flex: 1; flex-wrap: wrap; }
+  .add-form input {
+    flex: 1; min-width: 130px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 12px; color: var(--text);
+    font-family: Arial, Helvetica, sans-serif; font-size: 0.82rem;
+    outline: none; transition: border-color 0.2s, background 0.3s;
+  }
+  .add-form input::placeholder { color: var(--muted); }
+  .add-form input:focus { border-color: var(--accent); }
+  .add-form input.url-input { max-width: 210px; flex: 0 1 210px; }
+
+  .btn {
+    padding: 8px 15px; border-radius: 8px; border: none; cursor: pointer;
+    font-family: Arial, Helvetica, sans-serif; font-size: 0.76rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.05em; transition: all 0.2s; white-space: nowrap;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
+  .btn-ghost { background: var(--surface); color: var(--muted); border: 1px solid var(--border); transition: background 0.3s, border-color 0.2s, color 0.2s; }
+  .btn-ghost:hover { color: var(--text); border-color: var(--muted); }
+  .btn-ghost.active { color: var(--accent); border-color: var(--accent); }
+  .btn-danger { background: rgba(247,90,90,0.1); color: var(--red); border: 1px solid rgba(247,90,90,0.25); }
+  .btn-danger:hover { background: rgba(247,90,90,0.2); }
+  .filter-group { display: flex; gap: 6px; }
+
+  /* ── LIST ── */
+  .list-container { max-width: 820px; margin: 0 auto; display: flex; flex-direction: column; gap: 8px; }
+
+  /* Loading skeleton */
+  .skeleton {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px 16px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .skeleton-bar {
+    height: 12px; border-radius: 6px; background: var(--border);
+    animation: shimmer 1.2s ease-in-out infinite;
+  }
+  @keyframes shimmer { 0%,100%{opacity:0.4} 50%{opacity:1} }
+
+  .task-item {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); display: flex; align-items: center;
+    gap: 10px; padding: 12px 14px;
+    transition: background 0.2s, border-color 0.2s, transform 0.15s;
+    cursor: grab; position: relative; user-select: none;
+  }
+  .task-item:active { cursor: grabbing; }
+  .task-item:hover { border-color: #333a50; background: var(--surface2); }
+  .task-item.dragging { opacity: 0.35; border-style: dashed; border-color: var(--accent); }
+  .task-item.drag-over { border-color: var(--accent); background: rgba(79,142,247,0.07); transform: scale(1.01); }
+  .task-item.done { opacity: 0.5; }
+  .task-item.done .task-label { text-decoration: line-through; color: var(--done-text); }
+
+  .drag-handle { color: var(--border); font-size: 1rem; cursor: grab; flex-shrink: 0; transition: color 0.2s; line-height: 1; }
+  .task-item:hover .drag-handle { color: var(--muted); }
+
+  .checkbox {
+    width: 18px; height: 18px; flex-shrink: 0; appearance: none; -webkit-appearance: none;
+    background: var(--bg); border: 2px solid var(--border); border-radius: 5px;
+    cursor: pointer; display: grid; place-items: center; transition: all 0.2s;
+  }
+  .checkbox:checked { background: var(--green); border-color: var(--green); }
+  .checkbox:checked::after { content: '✓'; color: #fff; font-size: 0.7rem; font-weight: 900; }
+  .checkbox:hover { border-color: var(--green); }
+
+  .task-label {
+    flex: 1; font-size: 0.83rem; line-height: 1.4; color: var(--text);
+    transition: color 0.2s; word-break: break-word;
+    text-transform: uppercase; letter-spacing: 0.02em;
+  }
+
+  .task-link {
+    display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px;
+    border-radius: 5px; background: rgba(79,142,247,0.12); color: var(--accent);
+    font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+    text-decoration: none; border: 1px solid rgba(79,142,247,0.25);
+    transition: all 0.2s; white-space: nowrap; flex-shrink: 0;
+  }
+  .task-link:hover { background: rgba(79,142,247,0.22); border-color: var(--accent); }
+
+  /* ── EDIT LINK ── */
+  .btn-edit-link {
+    background: none; border: none; cursor: pointer; color: transparent;
+    font-size: 0.85rem; padding: 3px 5px; border-radius: 5px;
+    transition: all 0.2s; flex-shrink: 0; line-height: 1;
+  }
+  .task-item:hover .btn-edit-link { color: var(--muted); }
+  .btn-edit-link:hover { color: var(--accent) !important; background: rgba(79,142,247,0.1); }
+  .btn-edit-link.has-link { color: var(--accent) !important; opacity: 0.7; }
+  .btn-edit-link.has-link:hover { opacity: 1; }
+
+  .link-popup {
+    display: none; position: absolute; right: 44px; top: 50%; transform: translateY(-50%);
+    background: var(--surface2); border: 1px solid var(--accent);
+    border-radius: 9px; padding: 8px 10px; gap: 6px; align-items: center;
+    z-index: 20; box-shadow: 0 6px 24px rgba(0,0,0,0.45); min-width: 290px;
+  }
+  .link-popup.open { display: flex; }
+  .link-popup input {
+    flex: 1; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 6px; padding: 5px 9px; color: var(--text);
+    font-family: Arial, Helvetica, sans-serif; font-size: 0.78rem;
+    outline: none; min-width: 0; transition: border-color 0.2s;
+  }
+  .link-popup input:focus { border-color: var(--accent); }
+  .link-popup button {
+    padding: 5px 10px; border-radius: 6px; border: none; cursor: pointer;
+    font-family: Arial, Helvetica, sans-serif; font-size: 0.7rem; font-weight: 700;
+    text-transform: uppercase; transition: all 0.2s; white-space: nowrap;
+  }
+  .popup-save { background: var(--accent); color: #fff; }
+  .popup-save:hover { opacity: 0.85; }
+  .popup-clear { background: rgba(247,90,90,0.15); color: var(--red); }
+  .popup-clear:hover { background: rgba(247,90,90,0.28); }
+
+  .btn-delete {
+    background: none; border: none; cursor: pointer; color: transparent;
+    font-size: 0.9rem; padding: 3px 5px; border-radius: 5px;
+    transition: all 0.2s; flex-shrink: 0;
+  }
+  .task-item:hover .btn-delete { color: var(--muted); }
+  .btn-delete:hover { color: var(--red) !important; background: rgba(247,90,90,0.1); }
+
+  .badge-extra {
+    font-size: 0.58rem; padding: 2px 6px; border-radius: 99px;
+    background: rgba(124,90,246,0.15); color: var(--accent2);
+    border: 1px solid rgba(124,90,246,0.25); font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em; flex-shrink: 0;
+  }
+
+  .empty-state {
+    text-align: center; padding: 60px 20px; color: var(--muted);
+    font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.1em; display: none;
+  }
+  .empty-state.show { display: block; }
+
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+  @media (max-width: 600px) {
+    header { padding: 18px; }
+    .header-title h1 { font-size: 1.1rem; }
+    .add-form input.url-input { max-width: 100%; flex: 1 1 100%; }
+    .link-popup { right: 0; left: 0; min-width: unset; transform: translateY(calc(-100% - 10px)); top: 0; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-title">
+    <h1>Checklist T2</h1>
+    <p>Analista: Ezequiel Miranda</p>
+  </div>
+  <div class="header-right">
+    <div class="header-stats">
+      <div class="stat done">
+        <div class="stat-num" id="done-count">0</div>
+        <div class="stat-label">Feitas</div>
+      </div>
+      <div style="width:1px;height:30px;background:var(--border)"></div>
+      <div class="stat total">
+        <div class="stat-num" id="total-count">0</div>
+        <div class="stat-label">Total</div>
+      </div>
+    </div>
+    <div id="date-badge" class="date-badge"></div>
+    <!-- Sync status indicator -->
+    <div class="sync-badge syncing" id="sync-badge">
+      <span class="sync-dot"></span>
+      <span id="sync-label">Conectando…</span>
+    </div>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Alternar tema">
+      <span id="theme-icon">🌙</span>
+      <div class="toggle-track"><div class="toggle-thumb"></div></div>
+      <span id="theme-label">Escuro</span>
+    </button>
+  </div>
+</header>
+
+<div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
+
+<div class="toolbar-wrap">
+  <div class="toolbar-row">
+    <div class="add-form">
+      <input type="text" id="new-task" placeholder="Nova tarefa…" />
+      <input type="url" id="new-url" class="url-input" placeholder="URL (opcional)" />
+      <button class="btn btn-primary" onclick="addTask()">+ Adicionar</button>
+    </div>
+  </div>
+  <div class="toolbar-row space-between">
+    <div class="filter-group">
+      <button class="btn btn-ghost active" id="filter-all" onclick="setFilter('all')">Todas</button>
+      <button class="btn btn-ghost" id="filter-pending" onclick="setFilter('pending')">Pendentes</button>
+      <button class="btn btn-ghost" id="filter-done" onclick="setFilter('done')">Feitas</button>
+    </div>
+    <button class="btn btn-ghost btn-danger" onclick="resetChecks()">↺ Reset</button>
+  </div>
+</div>
+
+<div class="list-container" id="list"></div>
+<div class="empty-state" id="empty">Nenhuma tarefa encontrada.</div>
+
+<script>
+/* ══════════════════════════════════════════
+   CONFIGURAÇÃO FIREBASE
+   Banco: checklistelinks-default-rtdb
+   Nó: /checklist_t2_ezequiel
+══════════════════════════════════════════ */
+const FIREBASE_URL = 'https://checklistelinks-default-rtdb.firebaseio.com/checklist_t2_ezequiel.json';
+const STORAGE_KEY  = 'checklist_t2_ezequiel'; // localStorage cache
+const THEME_KEY    = 'checklist_t2_theme';
+
+const DEFAULT_TASKS = [
+  { id: 1,  text: "Tratativa de Backlog (Virada de Status)", url: "", extra: false },
+  { id: 2,  text: "Abrir Zonas Planejadas de Inventário", url: "", extra: false },
+  { id: 3,  text: "Validar Conferência de Inventário", url: "", extra: false },
+  { id: 4,  text: "REPORT OPERACIONAL DE PSs T2", url: "https://meu-app-demandas-t2-8r7iqrhbdmvqn4eimfvhps.streamlit.app", extra: false },
+  { id: 5,  text: "Organizar Backlog Pacotinhos em Frente ao FlowRack", url: "", extra: false },
+  { id: 6,  text: "Montagem De HUS Reversa", url: "", extra: false },
+  { id: 7,  text: "Atualizar base inventário", url: "https://docs.google.com/spreadsheets/d/163sPX3wtG1wFlj7KIkQh7PMJKL7d7s8xaUPsRuzJE0g/edit?gid=1190490006#gid=1190490006", extra: false },
+  { id: 8,  text: "Atualizar Base H Inventário", url: "https://docs.google.com/spreadsheets/d/1K7t5IdFn9O_FDlAD2xM-TlcTF9ALRIgpJfnuV2lnvrE/edit?gid=0#gid=0", extra: false },
+  { id: 9,  text: "Envio de E-mail pendências CFTV", url: "https://docs.google.com/spreadsheets/d/1RLDV54rSHIMe9tqk5ij9SAFqxu88-GiakwrNCyMU8PA/edit?gid=148789180#gid=148789180", extra: false },
+  { id: 10, text: "Report de Pendente Whatsapp", url: "https://docs.google.com/spreadsheets/d/1q1hv8ZhkbjNPm1l31XjrBBcKzNgMOEwgXOT7w3ugxzE/edit?gid=1392449464#gid=1392449464", extra: false },
+  { id: 11, text: "FINALIZAR ZONAS DE INVENTÁRIO", url: "", extra: false },
+  { id: 12, text: "ANÁLISE DE ALLOWANCE", url: "https://docs.google.com/spreadsheets/d/1Ut6aFYp3N9R_G1zb9BIh1VIVHmgipYy_qr0oubZYc7o/edit?gid=1680787292#gid=1680787292", extra: false },
+  { id: 13, text: "Reports de Fechamento", url: "", extra: false },
+  { id: 14, text: "Acompanhar o PS nos Sem ID", url: "", extra: false },
+  { id: 15, text: "Atualizar o HH Inventário", url: "https://hhinventario-xh4yt6a55b6ejfdczkqlus.streamlit.app", extra: false },
+];
+
+let tasks = [];
+let filter = 'all';
+let dragSrc = null;
+let openPopupId = null;
+let saveDebounceTimer = null;
+
+/* ── SYNC STATUS UI ── */
+function setSyncStatus(state) {
+  // state: 'syncing' | 'synced' | 'offline' | 'error'
+  const badge = document.getElementById('sync-badge');
+  const label = document.getElementById('sync-label');
+  badge.className = 'sync-badge ' + state;
+  const map = { syncing: 'Salvando…', synced: 'Salvo na nuvem', offline: 'Offline (local)', error: 'Erro ao salvar' };
+  label.textContent = map[state] || state;
+}
+
+/* ── THEME ── */
+function applyTheme(theme) {
+  document.documentElement.classList.toggle('light', theme === 'light');
+  document.getElementById('theme-icon').textContent  = theme === 'light' ? '☀️' : '🌙';
+  document.getElementById('theme-label').textContent = theme === 'light' ? 'Claro' : 'Escuro';
+}
+function toggleTheme() {
+  const next = document.documentElement.classList.contains('light') ? 'dark' : 'light';
+  localStorage.setItem(THEME_KEY, next);
+  applyTheme(next);
+}
+
+/* ════════════════════════════════════
+   FIREBASE — CARREGAR (fonte verdade)
+   Fluxo:
+   1. Mostra localStorage imediatamente (UX rápida)
+   2. Busca Firebase (fonte de verdade)
+   3. Se Firebase tiver dados → usa e atualiza cache
+   4. Se Firebase vazio → sobe dados locais para Firebase
+   5. Se Firebase inacessível → usa localStorage/defaults
+════════════════════════════════════ */
+async function loadData() {
+  setSyncStatus('syncing');
+
+  // Passo 1 — exibir cache local imediatamente para resposta rápida
+  try {
+    const cached = localStorage.getItem(STORAGE_KEY);
+    if (cached) {
+      tasks = JSON.parse(cached);
+      render();
+    }
+  } catch(e) {}
+
+  // Passo 2 — buscar dados do Firebase (fonte verdade)
+  try {
+    const resp = await fetch(FIREBASE_URL, { cache: 'no-store' });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+
+    const data = await resp.json();
+
+    if (Array.isArray(data) && data.length > 0) {
+      // Firebase tem dados — é a fonte verdade
+      tasks = data;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+      setSyncStatus('synced');
+    } else if (data === null || (Array.isArray(data) && data.length === 0)) {
+      // Firebase vazio — subir dados locais ou defaults
+      if (tasks.length === 0) {
+        tasks = DEFAULT_TASKS.map(t => ({ ...t, done: false }));
+      }
+      // Salvar no Firebase pela primeira vez
+      await pushToFirebase();
+    } else {
+      setSyncStatus('synced');
+    }
+  } catch(e) {
+    console.warn('[Firebase] Falha ao carregar:', e.message);
+    if (tasks.length === 0) {
+      tasks = DEFAULT_TASKS.map(t => ({ ...t, done: false }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+    }
+    setSyncStatus('offline');
+  }
+
+  render();
+}
+
+/* ════════════════════════════════
+   FIREBASE — SALVAR
+   Usa debounce para agrupar saves
+   rápidos (drag, vários cliques)
+════════════════════════════════ */
+async function pushToFirebase() {
+  try {
+    const resp = await fetch(FIREBASE_URL, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(tasks)
+    });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    setSyncStatus('synced');
+  } catch(e) {
+    console.warn('[Firebase] Falha ao salvar:', e.message);
+    setSyncStatus('error');
+    // Retry automático após 5s
+    setTimeout(pushToFirebase, 5000);
+  }
+}
+
+function save() {
+  // Salvar localStorage imediatamente (sync)
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+  // Firebase com debounce de 600ms para agrupar ações rápidas
+  setSyncStatus('syncing');
+  clearTimeout(saveDebounceTimer);
+  saveDebounceTimer = setTimeout(pushToFirebase, 600);
+}
+
+/* ── FILTER ── */
+function setFilter(f) {
+  filter = f;
+  ['all','pending','done'].forEach(x =>
+    document.getElementById('filter-'+x).classList.toggle('active', x === f));
+  closePopup(); render();
+}
+
+/* ── ADD ── */
+function addTask() {
+  const input    = document.getElementById('new-task');
+  const urlInput = document.getElementById('new-url');
+  const text = input.value.trim();
+  if (!text) { input.focus(); return; }
+  tasks.push({ id: Date.now(), text, url: urlInput.value.trim(), done: false, extra: true });
+  save();
+  input.value = ''; urlInput.value = ''; input.focus();
+  render();
+}
+
+/* ── TOGGLE / DELETE ── */
+function toggleTask(id) {
+  const t = tasks.find(t => t.id === id);
+  if (t) { t.done = !t.done; save(); render(); }
+}
+function deleteTask(id) {
+  tasks = tasks.filter(t => t.id !== id);
+  save(); render();
+}
+
+/* ── RESET ── */
+function resetChecks() {
+  if (!confirm('Limpar todas as marcações?')) return;
+  tasks.forEach(t => t.done = false);
+  save(); render();
+}
+
+/* ── EDIT LINK ── */
+function openLinkPopup(id) {
+  if (openPopupId === id) { closePopup(); return; }
+  closePopup();
+  openPopupId = id;
+  const popup = document.getElementById('popup-' + id);
+  const task  = tasks.find(t => t.id === id);
+  if (!popup || !task) return;
+  popup.querySelector('.popup-input').value = task.url || '';
+  popup.classList.add('open');
+  popup.querySelector('.popup-input').focus();
+}
+function closePopup() {
+  if (openPopupId !== null) {
+    const p = document.getElementById('popup-' + openPopupId);
+    if (p) p.classList.remove('open');
+    openPopupId = null;
+  }
+}
+function saveLink(id) {
+  const popup = document.getElementById('popup-' + id);
+  const val   = popup.querySelector('.popup-input').value.trim();
+  const task  = tasks.find(t => t.id === id);
+  if (task) { task.url = val; save(); }
+  closePopup(); render();
+}
+function clearLink(id) {
+  const task = tasks.find(t => t.id === id);
+  if (task) { task.url = ''; save(); }
+  closePopup(); render();
+}
+
+document.addEventListener('click', e => {
+  if (openPopupId === null) return;
+  const popup = document.getElementById('popup-' + openPopupId);
+  if (popup && !popup.contains(e.target) && !e.target.closest('.btn-edit-link')) closePopup();
+});
+
+/* ── RENDER ── */
+function render() {
+  const list  = document.getElementById('list');
+  const empty = document.getElementById('empty');
+
+  const visible = tasks.filter(t =>
+    filter === 'done' ? t.done : filter === 'pending' ? !t.done : true
+  );
+
+  const done  = tasks.filter(t => t.done).length;
+  const total = tasks.length;
+  document.getElementById('done-count').textContent  = done;
+  document.getElementById('total-count').textContent = total;
+  document.getElementById('progress').style.width    = (total ? done/total*100 : 0) + '%';
+
+  empty.classList.toggle('show', visible.length === 0);
+  list.innerHTML = '';
+
+  visible.forEach(task => {
+    const div = document.createElement('div');
+    div.className = 'task-item' + (task.done ? ' done' : '');
+    div.setAttribute('draggable', 'true');
+    div.dataset.id = task.id;
+
+    div.innerHTML = `
+      <span class="drag-handle" title="Arrastar">⠿</span>
+      <input type="checkbox" class="checkbox" ${task.done ? 'checked' : ''}
+        onchange="toggleTask(${task.id})" onclick="event.stopPropagation()">
+      <span class="task-label">${escHtml(task.text)}</span>
+      ${task.url ? `<a class="task-link" href="${escHtml(task.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">↗ Abrir</a>` : ''}
+      ${task.extra ? `<span class="badge-extra">extra</span>` : ''}
+      <button class="btn-edit-link ${task.url ? 'has-link' : ''}"
+        title="${task.url ? 'Editar link' : 'Adicionar link'}"
+        onclick="event.stopPropagation();openLinkPopup(${task.id})">🔗</button>
+      <div class="link-popup" id="popup-${task.id}" onclick="event.stopPropagation()">
+        <input class="popup-input" type="url" placeholder="Cole a URL aqui…"
+          onkeydown="if(event.key==='Enter')saveLink(${task.id});if(event.key==='Escape')closePopup();">
+        <button class="popup-save" onclick="saveLink(${task.id})">Salvar</button>
+        ${task.url ? `<button class="popup-clear" onclick="clearLink(${task.id})">✕</button>` : ''}
+      </div>
+      <button class="btn-delete" title="Remover"
+        onclick="event.stopPropagation();deleteTask(${task.id})">✕</button>
+    `;
+
+    div.addEventListener('dragstart', dragStart);
+    div.addEventListener('dragover',  dragOver);
+    div.addEventListener('drop',      drop);
+    div.addEventListener('dragend',   dragEnd);
+    div.addEventListener('dragleave', dragLeave);
+    list.appendChild(div);
+  });
+
+  const d = new Date();
+  document.getElementById('date-badge').textContent =
+    d.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' }).toUpperCase();
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ── DRAG & DROP ── */
+function dragStart(e) { dragSrc = this; this.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; }
+function dragOver(e) {
+  e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+  document.querySelectorAll('.task-item').forEach(el => el.classList.remove('drag-over'));
+  if (this !== dragSrc) this.classList.add('drag-over');
+}
+function dragLeave() { this.classList.remove('drag-over'); }
+function dragEnd() {
+  document.querySelectorAll('.task-item').forEach(el => el.classList.remove('dragging','drag-over'));
+  dragSrc = null;
+}
+function drop(e) {
+  e.stopPropagation();
+  if (!dragSrc || dragSrc === this) return;
+  const srcIdx = tasks.findIndex(t => t.id === parseInt(dragSrc.dataset.id));
+  const dstIdx = tasks.findIndex(t => t.id === parseInt(this.dataset.id));
+  if (srcIdx === -1 || dstIdx === -1) return;
+  const [moved] = tasks.splice(srcIdx, 1);
+  tasks.splice(dstIdx, 0, moved);
+  save(); render();
+}
+
+/* ── ENTER KEY ── */
+document.getElementById('new-task').addEventListener('keydown', e => { if (e.key==='Enter') addTask(); });
+document.getElementById('new-url').addEventListener('keydown',  e => { if (e.key==='Enter') addTask(); });
+
+/* ── INIT ── */
+applyTheme(localStorage.getItem(THEME_KEY) || 'dark');
+loadData();
+</script>
+</body>
+</html>
