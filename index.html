@@ -257,6 +257,45 @@
   .popup-clear { background: rgba(247,90,90,0.15); color: var(--red); }
   .popup-clear:hover { background: rgba(247,90,90,0.28); }
 
+  /* ── EDIT TITLE ── */
+  .btn-edit-title {
+    background: none; border: none; cursor: pointer; color: transparent;
+    font-size: 0.8rem; padding: 3px 5px; border-radius: 5px;
+    transition: all 0.2s; flex-shrink: 0; line-height: 1;
+  }
+  .task-item:hover .btn-edit-title { color: var(--muted); }
+  .btn-edit-title:hover { color: #f7c948 !important; background: rgba(247,201,72,0.12); }
+
+  .title-edit-overlay {
+    display: none; position: absolute;
+    left: 10px; right: 10px; top: 50%; transform: translateY(-50%);
+    z-index: 30; gap: 6px; align-items: center;
+    background: var(--surface2); border: 1px solid var(--accent);
+    border-radius: 8px; padding: 6px 10px;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.45);
+  }
+  .title-edit-overlay.active { display: flex; }
+  .title-ov-input {
+    flex: 1; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 6px; padding: 5px 9px; color: var(--text);
+    font-family: Arial, Helvetica, sans-serif; font-size: 0.83rem;
+    text-transform: uppercase; letter-spacing: 0.02em;
+    outline: none; min-width: 0; transition: border-color 0.2s;
+  }
+  .title-ov-input:focus { border-color: var(--accent); }
+  .title-ov-save {
+    padding: 5px 10px; border-radius: 6px; border: none; cursor: pointer;
+    background: var(--accent); color: #fff;
+    font-family: Arial, Helvetica, sans-serif; font-size: 0.7rem; font-weight: 700;
+    text-transform: uppercase; white-space: nowrap; transition: opacity 0.2s;
+  }
+  .title-ov-save:hover { opacity: 0.85; }
+  .title-ov-cancel {
+    padding: 5px 8px; border-radius: 6px; border: none; cursor: pointer;
+    background: none; color: var(--muted); font-size: 0.85rem; transition: color 0.2s;
+  }
+  .title-ov-cancel:hover { color: var(--red); }
+
   .btn-delete {
     background: none; border: none; cursor: pointer; color: transparent;
     font-size: 0.9rem; padding: 3px 5px; border-radius: 5px;
@@ -591,12 +630,7 @@ function render() {
       <span class="drag-handle" title="Arrastar">⠿</span>
       <input type="checkbox" class="checkbox" ${task.done ? 'checked' : ''}
         onchange="toggleTask(${task.id})" onclick="event.stopPropagation()">
-      <span class="task-label" >${escHtml(task.text)}</span>
-      <input class="title-edit-input" id="title-input-${task.id}" type="text"
-        value="${escHtml(task.text)}"
-        onkeydown="handleTitleKey(event,${task.id})"
-        onblur="commitTitle(${task.id})"
-        onclick="event.stopPropagation()">
+      <span class="task-label">${escHtml(task.text)}</span>
       ${task.url ? `<a class="task-link" href="${escHtml(task.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">↗ Abrir</a>` : ''}
       ${task.extra ? `<span class="badge-extra">extra</span>` : ''}
       <button class="btn-edit-title" title="Editar título"
@@ -631,47 +665,64 @@ function escHtml(s) {
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-/* ── EDIT TITLE ── */
+/* ── EDIT TITLE (modal inline) ── */
+let editTitleOverlay = null;
+
 function startEditTitle(id) {
-  const label = document.querySelector(`[data-id="${id}"] .task-label`);
-  const input = document.getElementById('title-input-' + id);
-  if (!label || !input) return;
-  label.style.display = 'none';
-  input.classList.add('active');
-  input.focus();
-  input.select();
+  // Remove any existing overlay
+  if (editTitleOverlay) editTitleOverlay.remove();
+
+  const item  = document.querySelector(`[data-id="${id}"]`);
+  const task  = tasks.find(t => t.id === id);
+  if (!item || !task) return;
+
+  // Build overlay div that sits over the task item content
+  const ov = document.createElement('div');
+  ov.className = 'title-edit-overlay active';
+  ov.id = 'title-ov-' + id;
+  ov.innerHTML = `
+    <input type="text" class="title-ov-input" value="${escHtml(task.text)}" placeholder="Novo título…">
+    <button class="title-ov-save" onclick="commitTitle(${id})">✔ Salvar</button>
+    <button class="title-ov-cancel" onclick="cancelTitle()">✕</button>
+  `;
+  item.appendChild(ov);
+  editTitleOverlay = ov;
+
+  const inp = ov.querySelector('.title-ov-input');
+  inp.focus(); inp.select();
+
+  inp.addEventListener('keydown', e => {
+    e.stopPropagation();
+    if (e.key === 'Enter')  { e.preventDefault(); commitTitle(id); }
+    if (e.key === 'Escape') cancelTitle();
+  });
+  inp.addEventListener('click', e => e.stopPropagation());
+  ov.addEventListener('click', e => e.stopPropagation());
 }
 
 function commitTitle(id) {
-  const label = document.querySelector(`[data-id="${id}"] .task-label`);
-  const input = document.getElementById('title-input-' + id);
-  if (!label || !input) return;
-  const newText = input.value.trim();
-  if (newText) {
-    const task = tasks.find(t => t.id === id);
-    if (task && task.text !== newText) {
-      task.text = newText;
-      save();
-    }
+  const ov   = document.getElementById('title-ov-' + id);
+  if (!ov) return;
+  const val  = ov.querySelector('.title-ov-input').value.trim();
+  const task = tasks.find(t => t.id === id);
+  if (task && val && val !== task.text) {
+    task.text = val;
+    save();
   }
-  label.style.display = '';
-  input.classList.remove('active');
-  // Update label text without full re-render
-  if (newText) {
-    label.textContent = newText;
-  }
+  ov.remove();
+  editTitleOverlay = null;
+  render();
 }
 
-function handleTitleKey(e, id) {
-  e.stopPropagation();
-  if (e.key === 'Enter') { e.preventDefault(); commitTitle(id); }
-  if (e.key === 'Escape') {
-    const task = tasks.find(t => t.id === id);
-    const input = document.getElementById('title-input-' + id);
-    if (task && input) input.value = task.text;
-    commitTitle(id);
-  }
+function cancelTitle() {
+  if (editTitleOverlay) { editTitleOverlay.remove(); editTitleOverlay = null; }
 }
+
+// Close title overlay on outside click
+document.addEventListener('click', e => {
+  if (!editTitleOverlay) return;
+  if (!editTitleOverlay.contains(e.target) && !e.target.closest('.btn-edit-title')) cancelTitle();
+});
 
 /* ── DRAG & DROP ── */
 function dragStart(e) { dragSrc = this; this.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; }
