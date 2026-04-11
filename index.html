@@ -591,9 +591,16 @@ function render() {
       <span class="drag-handle" title="Arrastar">⠿</span>
       <input type="checkbox" class="checkbox" ${task.done ? 'checked' : ''}
         onchange="toggleTask(${task.id})" onclick="event.stopPropagation()">
-      <span class="task-label">${escHtml(task.text)}</span>
+      <span class="task-label" ondblclick="event.stopPropagation();startEditTitle(${task.id})" title="Duplo clique para editar">${escHtml(task.text)}</span>
+      <input class="title-edit-input" id="title-input-${task.id}" type="text"
+        value="${escHtml(task.text)}"
+        onkeydown="handleTitleKey(event,${task.id})"
+        onblur="commitTitle(${task.id})"
+        onclick="event.stopPropagation()">
       ${task.url ? `<a class="task-link" href="${escHtml(task.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">↗ Abrir</a>` : ''}
       ${task.extra ? `<span class="badge-extra">extra</span>` : ''}
+      <button class="btn-edit-title" title="Editar título"
+        onclick="event.stopPropagation();startEditTitle(${task.id})">✏️</button>
       <button class="btn-edit-link ${task.url ? 'has-link' : ''}"
         title="${task.url ? 'Editar link' : 'Adicionar link'}"
         onclick="event.stopPropagation();openLinkPopup(${task.id})">🔗</button>
@@ -622,6 +629,48 @@ function render() {
 
 function escHtml(s) {
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ── EDIT TITLE ── */
+function startEditTitle(id) {
+  const label = document.querySelector(`[data-id="${id}"] .task-label`);
+  const input = document.getElementById('title-input-' + id);
+  if (!label || !input) return;
+  label.style.display = 'none';
+  input.classList.add('active');
+  input.focus();
+  input.select();
+}
+
+function commitTitle(id) {
+  const label = document.querySelector(`[data-id="${id}"] .task-label`);
+  const input = document.getElementById('title-input-' + id);
+  if (!label || !input) return;
+  const newText = input.value.trim();
+  if (newText) {
+    const task = tasks.find(t => t.id === id);
+    if (task && task.text !== newText) {
+      task.text = newText;
+      save();
+    }
+  }
+  label.style.display = '';
+  input.classList.remove('active');
+  // Update label text without full re-render
+  if (newText) {
+    label.textContent = newText;
+  }
+}
+
+function handleTitleKey(e, id) {
+  e.stopPropagation();
+  if (e.key === 'Enter') { e.preventDefault(); commitTitle(id); }
+  if (e.key === 'Escape') {
+    const task = tasks.find(t => t.id === id);
+    const input = document.getElementById('title-input-' + id);
+    if (task && input) input.value = task.text;
+    commitTitle(id);
+  }
 }
 
 /* ── DRAG & DROP ── */
