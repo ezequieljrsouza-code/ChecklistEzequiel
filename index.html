@@ -236,7 +236,7 @@
     text-transform: uppercase; letter-spacing: 0.06em; margin-left: 6px; vertical-align: middle;
   }
   /* col: status */
-  .td-status { text-align: center; width: 160px; position: relative; }
+  .td-status { text-align: center; width: 160px; }
   /* col: link */
   .td-link { text-align: center; width: 90px; }
   /* col: obs */
@@ -271,11 +271,10 @@
 
   /* ── STATUS DROPDOWN ── */
   .status-dropdown {
-    display: none; position: absolute; left: 50%; transform: translateX(-50%);
-    top: calc(100% + 4px); z-index: 100;
+    display: none; position: fixed; z-index: 9999;
     background: var(--surface); border: 1px solid var(--accent);
-    border-radius: 10px; padding: 6px; min-width: 170px;
-    box-shadow: 0 8px 28px rgba(0,0,0,0.5);
+    border-radius: 10px; padding: 6px; min-width: 175px;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.55);
   }
   .status-dropdown.open { display: block; }
   .status-option {
@@ -720,12 +719,29 @@ function resetChecks() {
 }
 
 /* ── STATUS DROPDOWN ── */
-function openStatusDropdown(id) {
+function openStatusDropdown(id, pillEl) {
   if (openStatusId === id) { closeStatusDropdown(); return; }
   closeStatusDropdown();
   openStatusId = id;
   const dd = document.getElementById('sd-' + id);
-  if (dd) dd.classList.add('open');
+  if (!dd) return;
+
+  // Position using fixed coords so it never overlaps other rows
+  dd.classList.add('open');
+  const rect = pillEl.getBoundingClientRect();
+  const ddW  = 175;
+  let left   = rect.left + rect.width / 2 - ddW / 2;
+  let top    = rect.bottom + 5;
+
+  // Keep within viewport
+  if (left + ddW > window.innerWidth - 8) left = window.innerWidth - ddW - 8;
+  if (left < 8) left = 8;
+  // Flip upward if not enough space below
+  const ddH = dd.offsetHeight || 170;
+  if (top + ddH > window.innerHeight - 8) top = rect.top - ddH - 5;
+
+  dd.style.left = left + 'px';
+  dd.style.top  = top  + 'px';
 }
 function closeStatusDropdown() {
   if (openStatusId !== null) {
@@ -890,7 +906,7 @@ function render() {
       </td>
       <td class="td-status">
         <span class="status-pill" data-status="${status}"
-          onclick="event.stopPropagation();openStatusDropdown(${task.id})">
+          onclick="event.stopPropagation();openStatusDropdown(${task.id},this)">
           ${sOpt.icon} ${status} <span class="status-arrow">▼</span>
         </span>
         <div class="status-dropdown" id="sd-${task.id}" onclick="event.stopPropagation()">
